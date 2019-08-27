@@ -5,6 +5,10 @@ class Session(object):
     secret: str
 
     conn = None
+    mark_disconn = False
 
     def send(self, text: str):
-        self.conn.send(text.encode() + b"\n\r")
+        try:
+            self.conn.send(text.encode() + b"\n\r")
+        except:
+            self.mark_disconn = True

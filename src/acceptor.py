@@ -5,15 +5,26 @@ from session import Session
 
 sessions = []
 
-def notifyAll(msg, ses):
+def _sendall(msg, ses):
     for session in sessions:
+        if session.mark_disconn:
+            session.send(f"<server> {session.username} has left.")
+            del session
+            continue
         if session != ses:
-            session.send(f"<{ses.username}> {msg}")
+            session.send(f"{msg}")
+
+def notifyAll(msg, ses):
+    _sendall(f"<{ses.username}> {msg}", ses)
 
 def svrNotifyAll(msg, ses):
-    for session in sessions:
-        if session != ses:
-            session.send(f"<server> {msg}")
+    _sendall(f"<server> {msg}", ses)
+
+def sanData(data):
+    try:
+        return data.decode().strip()
+    except:
+        return None
 
 def handleClient(conn, addr):
     conn.send(greeting.encode())
@@ -24,11 +35,12 @@ def handleClient(conn, addr):
     session = Session()
 
     data = conn.recv(1024)
+    data = sanData(data)
     if not data:
         conn.send(b"\nThat is not a valid username. Try again\n")
         conn.close()
     
-    session.username = data.decode().strip()
+    session.username = data
     session.conn = conn
     
     session.send(f"\n<server> Hello {session.username}! Welcome to the chatroom.")
@@ -38,10 +50,11 @@ def handleClient(conn, addr):
 
     while True:
         data = conn.recv(4096)
+        data = sanData(data)
         if not data:
             continue
         
-        notifyAll(data.decode().strip(), session)
+        notifyAll(data, session)
 
 
 
